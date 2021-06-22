@@ -18,6 +18,11 @@ fn check(mut component: Component, truth_table: HashMap<Vec<Bit>, Vec<Bit>>) {
 }
 
 #[test]
+fn todo() {
+    panic!("comp doesn't work for more than 2 outputs / inputs");
+}
+
+#[test]
 fn nand_test() {
     let nand = comp! {
         (0 => 0, 0 => 1);
@@ -71,8 +76,6 @@ fn not_test() {
 }
 
 fn and() -> Component {
-    let not = not();
-
     comp! {
         (0 => 0, 0 => 1);
         nand: 1 => 0;
@@ -94,8 +97,6 @@ fn and_test() {
 }
 
 fn or() -> Component {
-    let not = not();
-
     comp! {
         (0 => 0, 1 => 0);
         not: 2 => 0;
@@ -118,9 +119,6 @@ fn or_test() {
 }
 
 fn nor() -> Component {
-    let or = or();
-    let not = not();
-
     comp! {
         (0 => 0, 0 => 1);
         or: 1 => 0;
@@ -142,10 +140,6 @@ fn nor_test() {
 }
 
 fn xor() -> Component {
-    let not = not();
-    let or = or();
-    let and = and();
-
     comp! {
         (0 => 0, 1 => 0);
         dup: (2 => 0, 4 => 0);

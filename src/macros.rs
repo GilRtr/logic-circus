@@ -82,22 +82,22 @@ macro_rules! comp {
     };
     (@rest $__sequals:ident $__gates:ident $component:ident: ($index:expr => $entry:expr $(, $($sequal_tail:tt)+)?) ; $($tail:tt)*) => {
         $__sequals.push(sequals![$index => $entry $(, $($sequal_tail)+)?]);
-        $__gates.push($crate::Gate::custom($component.clone()));
+        $__gates.push($crate::Gate::custom($component()));
         comp!(@rest $__sequals $__gates $($tail)*);
     };
     (@rest $__sequals:ident $__gates:ident $component:ident: $index:expr => $entry:expr ; $($tail:tt)*) => {
         $__sequals.push(sequals![$index => $entry]);
-        $__gates.push($crate::Gate::custom($component.clone()));
+        $__gates.push($crate::Gate::custom($component()));
         comp!(@rest $__sequals $__gates $($tail)*);
     };
     (@rest $__sequals:ident $__gates:ident $component:ident: ($entry:expr $(, $($sequal_tail:tt)+)?) ; $($tail:tt)*) => {
         $__sequals.push(sequals![$entry $(, $($sequal_tail)+)?]);
-        $__gates.push($crate::Gate::custom($component,clone()));
+        $__gates.push($crate::Gate::custom($component()));
         comp!(@rest $__sequals $__gates $($tail)*);
     };
     (@rest $__sequals:ident $__gates:ident $component:ident: $entry:expr ; $($tail:tt)*) => {
         $__sequals.push(sequals![$entry]);
-        $__gates.push($crate::Gate::custom($component.clone()));
+        $__gates.push($crate::Gate::custom($component()));
         comp!(@rest $__sequals $__gates $($tail)*);
     };
     (@rest $__sequals:ident $__gates:ident) => {};
