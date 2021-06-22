@@ -18,11 +18,6 @@ fn check(mut component: Component, truth_table: HashMap<Vec<Bit>, Vec<Bit>>) {
 }
 
 #[test]
-fn todo() {
-    panic!("comp doesn't work for more than 2 outputs / inputs");
-}
-
-#[test]
 fn nand_test() {
     let nand = comp! {
         (0 => 0, 0 => 1);
