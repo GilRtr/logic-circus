@@ -18,6 +18,10 @@ where
                     let value = input.get_copied(0);
                     input.change_len(*amount, value)
                 }
+                RustImpls::Mem(current) => {
+                    std::mem::swap(current, input.get_unchecked_mut(0));
+                    input
+                }
                 RustImpls::Not => {
                     input.get_unchecked_mut(0).action_assign(Bit::not);
                     input
@@ -35,6 +39,7 @@ where
     fn num_of_inputs(&self) -> usize {
         match self {
             RustImpls::Dup(_) => 1,
+            RustImpls::Mem(_) => 1,
             RustImpls::Not => 1,
             RustImpls::Nand => 2,
             RustImpls::And => 2,

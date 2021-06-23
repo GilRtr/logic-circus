@@ -12,7 +12,7 @@ use std::convert::Infallible;
 
 use sequals::SequalsExtension;
 
-mod constructors;
+pub mod constructors;
 mod gate;
 mod implemented;
 mod sequals;
@@ -29,6 +29,12 @@ pub struct Component<Rust = Infallible> {
     /// sequals.last
     sequals: Vec<Vec<Sequal>>,
     /// number of outputs
+    outputs: usize,
+}
+
+pub struct ComponentBuilder<Rust = Infallible> {
+    gates: Vec<Gate<Rust>>,
+    sequals: Vec<Vec<Sequal>>,
     outputs: usize,
 }
 
@@ -54,6 +60,7 @@ pub enum GateKind<Rust = Infallible> {
 #[derive(Clone, Debug, Copy)]
 pub enum RustImpls<Rust = Infallible> {
     Dup(usize),
+    Mem(Bit),
     Not,
     Nand,
     And,

@@ -1,6 +1,6 @@
 [package]
 name = "logic-circus"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Gil Rtr <glrtr2003@gmail.com>"]
 edition = "2018"
 description = "Open source logic circuit simualtor written in Rust."

@@ -1,12 +1,4 @@
-use std::convert::Infallible;
-
-use crate::{Bit, Component, Gate, GateKind, GateLike, RustImpls, Sequal};
-
-pub struct ComponentBuilder<Rust = Infallible> {
-    gates: Vec<Gate<Rust>>,
-    sequals: Vec<Vec<Sequal>>,
-    outputs: usize,
-}
+use crate::{Bit, Component, ComponentBuilder, Gate, GateKind, GateLike, RustImpls, Sequal};
 
 impl<Rust> Default for ComponentBuilder<Rust> {
     fn default() -> Self {
