@@ -1,8 +1,11 @@
 use std::mem;
 
-use crate::{constructors, Bit, Gate, GateKind};
+use crate::{constructors, Bit, Gate, GateKind, GateLike};
 
-impl Gate {
+impl<Rust> Gate<Rust>
+where
+    Rust: GateLike,
+{
     pub(super) fn fill_input(&mut self, with: Bit, at: usize) -> Option<Vec<Bit>> {
         debug_assert!(
             self.inputs.len() > at,
@@ -12,25 +15,17 @@ impl Gate {
         );
         *unsafe { self.inputs.get_unchecked_mut(at) } = with;
         self.inputs_filled += 1;
-        (self.inputs_filled == self.inputs.len()).then(|| self.compute())
+        if self.inputs_filled == self.inputs.len() {
+            Some(self.compute())
+        } else {
+            None
+        }
     }
 
     fn compute(&mut self) -> Vec<Bit> {
-        let mut inputs = mem::take(&mut self.inputs);
-        match &mut self.kind {
-            GateKind::Nand => {
-                debug_assert_eq!(inputs.len(), 2);
-                inputs.clear();
-                inputs.push(!(unsafe { *inputs.get_unchecked(0) && *inputs.get_unchecked(1) }));
-                inputs
-            }
-            GateKind::Duplicate(ref amount) => {
-                debug_assert_eq!(inputs.len(), 1);
-                inputs.resize(*amount, *unsafe { inputs.get_unchecked(0) });
-                inputs
-            }
-            GateKind::Custom(component) => component.run(inputs),
-        }
+        let inputs = mem::take(&mut self.inputs);
+
+        self.kind.compute(inputs)
     }
 
     pub(super) fn reset(&mut self) {
@@ -42,14 +37,21 @@ impl Gate {
     }
 }
 
-impl GateKind {
-    pub(super) fn num_of_inputs(&self) -> usize {
+impl<Rust> GateLike for GateKind<Rust>
+where
+    Rust: GateLike,
+{
+    fn compute(&mut self, input: Vec<Bit>) -> Vec<Bit> {
         match self {
-            Self::Nand => 2,
-            Self::Duplicate(_) => 1,
-            Self::Custom(component) => {
-                unsafe { component.sequals.get_unchecked(component.sequals.len() - 1) }.len()
-            }
+            GateKind::Custom(component) => component.compute(input),
+            GateKind::Rust(component) => component.compute(input),
+        }
+    }
+
+    fn num_of_inputs(&self) -> usize {
+        match self {
+            Self::Custom(component) => component.num_of_inputs(),
+            Self::Rust(component) => component.num_of_inputs(),
         }
     }
 }

@@ -1,21 +1,61 @@
-use crate::{Bit, Component, Gate, GateKind, Sequal};
+use std::convert::Infallible;
 
-impl Component {
-    pub fn new(
-        gates: Vec<Gate>,
-        input_sequals: Vec<Sequal>,
-        mut sequals: Vec<Vec<Sequal>>,
-    ) -> Self {
-        debug_assert_eq!(gates.len(), sequals.len());
-        sequals.push(input_sequals);
+use crate::{Bit, Component, Gate, GateKind, GateLike, RustImpls, Sequal};
+
+pub struct ComponentBuilder<Rust = Infallible> {
+    gates: Vec<Gate<Rust>>,
+    sequals: Vec<Vec<Sequal>>,
+    outputs: usize,
+}
+
+impl<Rust> Default for ComponentBuilder<Rust> {
+    fn default() -> Self {
         Self {
-            outputs: sequals
-                .iter()
-                .flatten()
-                .filter(|x| matches!(x, Sequal::End { .. }))
-                .count(),
+            gates: Vec::default(),
+            sequals: Vec::default(),
+            outputs: usize::default(),
+        }
+    }
+}
+
+impl<Rust> ComponentBuilder<Rust> {
+    pub fn gate(mut self, gate: Gate<Rust>, sequals: Vec<Sequal>) -> Self {
+        self.push_sequals(sequals);
+        self.gates.push(gate);
+        self
+    }
+
+    fn push_sequals(&mut self, sequals: Vec<Sequal>) -> &mut Self {
+        self.outputs += sequals
+            .iter()
+            .filter(|x| matches!(x, Sequal::End { .. }))
+            .count();
+        self.sequals.push(sequals);
+        self
+    }
+
+    pub fn inputs(mut self, inputs: Vec<Sequal>) -> Component<Rust> {
+        self.push_sequals(inputs);
+        Component::from_raw_parts(self.gates, self.sequals, self.outputs)
+    }
+}
+
+impl<Rust> Component<Rust> {
+    pub fn builder() -> ComponentBuilder<Rust> {
+        ComponentBuilder::default()
+    }
+
+    pub fn from_raw_parts(
+        gates: Vec<Gate<Rust>>,
+        sequals: Vec<Vec<Sequal>>,
+        outputs: usize,
+    ) -> Self {
+        debug_assert_eq!(gates.len() + 1, sequals.len());
+
+        Self {
             gates,
             sequals,
+            outputs,
         }
     }
 }
@@ -30,8 +70,11 @@ impl Sequal {
     }
 }
 
-impl Gate {
-    pub fn new(kind: GateKind) -> Self {
+impl<Rust> Gate<Rust>
+where
+    Rust: GateLike,
+{
+    pub fn new(kind: GateKind<Rust>) -> Self {
         Self {
             inputs: zeroed_vec(kind.num_of_inputs()),
             inputs_filled: 0,
@@ -39,14 +82,32 @@ impl Gate {
         }
     }
 
-    pub fn nand_gate() -> Self {
-        Self::new(GateKind::Nand)
-    }
-    pub fn duplicator(amount: usize) -> Self {
-        Self::new(GateKind::Duplicate(amount))
-    }
-    pub fn custom(component: Component) -> Self {
+    pub fn custom_curcuit(component: Component<Rust>) -> Self {
         Self::new(GateKind::Custom(component))
+    }
+    pub fn rust_logic(logic: Rust) -> Self {
+        Self::new(GateKind::Rust(RustImpls::User(logic)))
+    }
+    pub fn dup(amount: usize) -> Self {
+        Self::new(GateKind::Rust(RustImpls::Dup(amount)))
+    }
+    pub fn not() -> Self {
+        Self::new(GateKind::Rust(RustImpls::Not))
+    }
+    pub fn nand() -> Self {
+        Self::new(GateKind::Rust(RustImpls::Nand))
+    }
+    pub fn and() -> Self {
+        Self::new(GateKind::Rust(RustImpls::And))
+    }
+    pub fn or() -> Self {
+        Self::new(GateKind::Rust(RustImpls::Or))
+    }
+    pub fn nor() -> Self {
+        Self::new(GateKind::Rust(RustImpls::Nor))
+    }
+    pub fn xor() -> Self {
+        Self::new(GateKind::Rust(RustImpls::Xor))
     }
 }
 

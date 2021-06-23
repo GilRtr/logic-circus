@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use crate::{Component, Gate, GateLike, Sequal};
+
 use super::*;
 
 macro_rules! table {
@@ -12,149 +14,104 @@ macro_rules! table {
 
 fn check(mut component: Component, truth_table: HashMap<Vec<Bit>, Vec<Bit>>) {
     for (input, output) in truth_table {
-        assert_eq!(component.run(input), output);
+        assert_eq!(component.compute(input), output);
         component.reset();
     }
 }
 
-#[test]
-fn nand_test() {
-    let nand = comp! {
-        (0 => 0, 0 => 1);
-        nand: 0;
-    };
+fn component(gate: Gate) -> Component {
+    let sequals = vec![Sequal::end(0)];
+    let inputs = (0..gate.kind.num_of_inputs())
+        .map(|x| Sequal::gate(0, x))
+        .collect();
+    Component::builder().gate(gate, sequals).inputs(inputs)
+}
 
+#[test]
+fn nand() {
     check(
-        nand,
+        component(Gate::nand()),
         table! {
-            false, false => true;
+                false, false => true;
+                false, true => true;
+                true, false => true;
+                true, true => false;
+        },
+    )
+}
+
+#[test]
+fn dup() {
+    check(
+        Component::builder()
+            .gate(Gate::dup(3), (0..3).map(Sequal::end).collect())
+            .inputs(vec![Sequal::gate(0, 0)]),
+        table! {
+            false => false, false, false;
+            true => true, true, true;
+        },
+    )
+}
+
+#[test]
+fn not() {
+    check(
+        component(Gate::not()),
+        table! {
+            true => false;
+            false => true;
+        },
+    )
+}
+
+#[test]
+fn and() {
+    check(
+        component(Gate::and()),
+        table! {
+            false, false => false;
+            false, true => false;
+            true, false => false;
+            true, true => true;
+        },
+    )
+}
+
+#[test]
+fn or() {
+    check(
+        component(Gate::or()),
+        table! {
+            false, false => false;
             false, true => true;
             true, false => true;
+            true, true => true;
+        },
+    )
+}
+
+#[test]
+fn nor() {
+    check(
+        component(Gate::nor()),
+        table! {
+            false, false => true;
+            false, true => false;
+            true, false => false;
             true, true => false;
         },
     )
 }
 
 #[test]
-fn dup_test() {
-    let dup = comp! {
-        0 => 0;
-        dup: (0, 1);
-    };
-
+fn xor() {
     check(
-        dup,
-        table! {
-            false => false, false;
-            true => true, true;
-        },
-    );
-}
-
-fn not() -> Component {
-    comp! {
-        0 => 0;
-        dup: (1 => 0, 1 => 1);
-        nand: 0;
-    }
-}
-
-#[test]
-fn not_test() {
-    check(
-        not(),
-        table! {
-            true => false;
-            false => true;
-        },
-    );
-}
-
-fn and() -> Component {
-    comp! {
-        (0 => 0, 0 => 1);
-        nand: 1 => 0;
-        not: 0;
-    }
-}
-
-#[test]
-fn and_test() {
-    check(
-        and(),
-        table! {
-            false, false => false;
-            false, true => false;
-            true, false => false;
-            true, true => true;
-        },
-    );
-}
-
-fn or() -> Component {
-    comp! {
-        (0 => 0, 1 => 0);
-        not: 2 => 0;
-        not: 2 => 1;
-        nand: 0;
-    }
-}
-
-#[test]
-fn or_test() {
-    check(
-        or(),
-        table! {
-            false, false => false;
-            false, true => true;
-            true, false => true;
-            true, true => true;
-        },
-    );
-}
-
-fn nor() -> Component {
-    comp! {
-        (0 => 0, 0 => 1);
-        or: 1 => 0;
-        not: 0;
-    }
-}
-
-#[test]
-fn nor_test() {
-    check(
-        nor(),
-        table! {
-            false, false => true;
-            false, true => false;
-            true, false => false;
-            true, true => false;
-        },
-    );
-}
-
-fn xor() -> Component {
-    comp! {
-        (0 => 0, 1 => 0);
-        dup: (2 => 0, 4 => 0);
-        dup: (2 => 1, 4 => 1);
-        and: 3 => 0;
-        not: 5 => 1;
-        or: 5 => 0;
-        and: 0;
-    }
-}
-
-#[test]
-fn xor_test() {
-    check(
-        xor(),
+        component(Gate::xor()),
         table! {
             false, false => false;
             false, true => true;
             true, false => true;
             true, true => false;
         },
-    );
+    )
 }

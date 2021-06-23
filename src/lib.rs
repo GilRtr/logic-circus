@@ -1,40 +1,22 @@
+#![allow(unused_unsafe)]
+
+use std::convert::Infallible;
+
 use sequals::SequalsExtension;
 
-#[cfg(test)]
-mod components;
 mod constructors;
 mod gate;
-mod macros;
+mod implemented;
 mod sequals;
+#[cfg(test)]
+mod todo;
+mod util;
 
 type Bit = bool;
 
-#[cfg(test)]
-mod todo {
-    #[test]
-    fn comp_macro() {
-        panic!("The comp macro doesn't work for more than 2 outputs / inputs");
-    }
-
-    #[test]
-    fn optimize() {
-        panic!("Switch out the bit vectors to SmallBitVec. Provide built-in implementations for gates that are common and would greatly benifit from it");
-    }
-
-    #[test]
-    fn memory() {
-        panic!("Provide a way to save things in registers / ram");
-    }
-
-    #[test]
-    fn expand() {
-        panic!("Provide infrastructure for multibit operations (multibit input & output and a primitive split gate)");
-    }
-}
-
 #[derive(Clone, Debug)]
-pub struct Component {
-    gates: Vec<Gate>,
+pub struct Component<Rust = Infallible> {
+    gates: Vec<Gate<Rust>>,
     /// for every output in each gate (`sequals[0][1]` is for the second output of the first gate)
     /// sequals.last
     sequals: Vec<Vec<Sequal>>,
@@ -49,43 +31,74 @@ pub enum Sequal {
 }
 
 #[derive(Clone, Debug)]
-pub struct Gate {
-    kind: GateKind,
+pub struct Gate<Rust = Infallible> {
+    kind: GateKind<Rust>,
     inputs: Vec<Bit>,
     inputs_filled: usize,
 }
 
 #[derive(Clone, Debug)]
-pub enum GateKind {
-    Nand,
-    Duplicate(usize),
-    Custom(Component),
-    // Split,
-    // Clock,
+pub enum GateKind<Rust = Infallible> {
+    Custom(Component<Rust>),
+    Rust(RustImpls<Rust>),
 }
 
-impl Component {
-    pub fn run(&mut self, input: Vec<Bit>) -> Vec<Bit> {
-        let mut outputs = constructors::zeroed_vec(self.outputs);
-        let mut outputs_filled = 0;
+#[derive(Clone, Debug, Copy)]
+pub enum RustImpls<Rust = Infallible> {
+    Dup(usize),
+    Not,
+    Nand,
+    And,
+    Or,
+    Nor,
+    Xor,
+    User(Rust),
+}
 
-        let gates = &mut self.gates;
+pub trait GateLike {
+    fn compute(&mut self, input: Vec<Bit>) -> Vec<Bit>;
+    fn num_of_inputs(&self) -> usize;
+}
 
-        self.sequals.run(
-            self.sequals.len() - 1,
-            input,
-            gates,
-            &mut outputs,
-            &mut outputs_filled,
-        );
-
-        debug_assert_eq!(outputs_filled, outputs.len());
-        outputs
-    }
-
+impl<Rust> Component<Rust>
+where
+    Rust: GateLike,
+{
     pub fn reset(&mut self) {
         for gate in &mut self.gates {
             gate.reset()
         }
+    }
+}
+
+impl<Rust> GateLike for Component<Rust>
+where
+    Rust: GateLike,
+{
+    fn compute(&mut self, input: Vec<Bit>) -> Vec<Bit> {
+        let mut outputs = constructors::zeroed_vec(self.outputs);
+
+        self.sequals.run(
+            self.sequals.len() - 1,
+            &input,
+            &mut self.gates,
+            &mut outputs,
+        );
+
+        outputs
+    }
+
+    fn num_of_inputs(&self) -> usize {
+        unsafe { self.sequals.get_unchecked(self.sequals.len() - 1) }.len()
+    }
+}
+
+impl GateLike for Infallible {
+    fn compute(&mut self, _input: Vec<Bit>) -> Vec<Bit> {
+        unreachable!("can't compute result of infallible")
+    }
+
+    fn num_of_inputs(&self) -> usize {
+        unreachable!("infallible has <???> inputs")
     }
 }
